@@ -1,0 +1,298 @@
+html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعلم الأرقام من 1 إلى 10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .number-card {
+            transition: all 0.3s ease;
+            transform: perspective(1000px) rotateX(0deg);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .number-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .number-circle {
+            transition: all 0.3s ease;
+        }
+        
+        .number-circle:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.5));
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .success-animation {
+            animation: pop 0.5s ease-out;
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-blue-200 via-green-200 to-yellow-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- العنوان -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
+                تعلم الأرقام من 1 إلى 10
+            </h1>
+            <p class="text-xl text-gray-700">انقر على الرقم ثم على الصورة المناسبة</p>
+        </div>
+
+        <!-- حالة اللعبة -->
+        <div class="text-center mb-6">
+            <div id="gameStatus" class="text-2xl font-bold text-green-600 mb-2">اختر الرقم الذي تسمعه</div>
+            <div id="score" class="text-xl text-blue-600">الدرجة: 0</div>
+        </div>
+
+        <!-- لوحة الأرقام -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-8">
+            <!-- سيتم ملؤها بالجافا سكريبت -->
+        </div>
+
+        <!-- الصور -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-8">
+            <!-- سيتم ملؤها بالجافا سكريبت -->
+        </div>
+
+        <!-- زر إعادة المحاولة -->
+        <div class="text-center">
+            <button id="resetBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                لعبة جديدة
+            </button>
+        </div>
+
+        <!-- مؤثرات صوتية -->
+        <audio id="correctSound">
+            <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="wrongSound">
+            <source src="https://www.soundjay.com/buttons/sounds/button-1.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        // بيانات الأرقام والصور
+        const numbersData = [
+            { number: 1, image: 'https://placehold.co/150x150/FF6B6B/FFFFFF?text=شمس+واحدة', word: 'شمس' },
+            { number: 2, image: 'https://placehold.co/150x150/4ECDC4/FFFFFF?text=عينان', word: 'عينان' },
+            { number: 3, image: 'https://placehold.co/150x150/45B7D1/FFFFFF?text=أرجل+ثلاثة', word: 'أرجل' },
+            { number: 4, image: 'https://placehold.co/150x150/96CEB4/FFFFFF?text=أرجل+أربعة', word: 'أرجل' },
+            { number: 5, image: 'https://placehold.co/150x150/FFEAA7/000000?text=أصابع+خمسة', word: 'أصابع' },
+            { number: 6, image: 'https://placehold.co/150x150/DDA0DD/FFFFFF?text=أرجل+ستة', word: 'أرجل' },
+            { number: 7, image: 'https://placehold.co/150x150/FFB6C1/FFFFFF?text=أيام+سبعة', word: 'أيام' },
+            { number: 8, image: 'https://placehold.co/150x150/98FB98/FFFFFF?text=أرجل+ثمانية', word: 'أرجل' },
+            { number: 9, image: 'https://placehold.co/150x150/F0E68C/FFFFFF?text=أرجل+تسع', word: 'أرجل' },
+            { number: 10, image: 'https://placehold.co/150x150/FA8072/FFFFFF?text=أصابع+عشرة', word: 'أصابع' }
+        ];
+
+        // عناصر DOM
+        const numbersGrid = document.querySelector('.grid.grid-cols-2.sm\\:grid-cols-3.md\\:grid-cols-5.gap-4.mb-8');
+        const imagesGrid = document.querySelectorAll('.grid.grid-cols-2.sm\\:grid-cols-3.md\\:grid-cols-5.gap-4')[1];
+        const gameStatus = document.getElementById('gameStatus');
+        const scoreElement = document.getElementById('score');
+        const resetBtn = document.getElementById('resetBtn');
+        const correctSound = document.getElementById('correctSound');
+        const wrongSound = document.getElementById('wrongSound');
+
+        // حالة اللعبة
+        let score = 0;
+        let selectedNumber = null;
+        let currentTarget = null;
+        let usedNumbers = [];
+
+        // إنشاء أرقام
+        function createNumbers() {
+            numbersGrid.innerHTML = '';
+            numbersData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'number-card bg-gradient-to-br from-indigo-400 to-purple-500 rounded-2xl p-6 text-center cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-lg';
+                card.innerHTML = `
+                    <div class="number-circle bg-white rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center text-3xl font-bold text-purple-600 shadow-md">
+                        ${item.number}
+                    </div>
+                    <p class="text-white font-bold text-lg">${item.number}</p>
+                `;
+                card.onclick = () => selectNumber(item.number);
+                numbersGrid.appendChild(card);
+            });
+        }
+
+        // إنشاء صور
+        function createImages() {
+            imagesGrid.innerHTML = '';
+            const shuffled = [...numbersData].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl p-4 text-center cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-xl';
+                card.dataset.number = item.number;
+                card.innerHTML = `
+                    <img src="${item.image}" alt="صورة ${item.number}" class="w-24 h-24 mx-auto mb-3 rounded-lg object-cover shadow-md">
+                    <p class="text-gray-700 font-bold text-lg">${item.word}</p>
+                `;
+                card.onclick = () => checkAnswer(parseInt(card.dataset.number));
+                imagesGrid.appendChild(card);
+            });
+        }
+
+        // اختيار رقم
+        function selectNumber(number) {
+            if (selectedNumber !== null) return;
+            
+            selectedNumber = number;
+            gameStatus.textContent = `اختر الصورة التي تظهر الرقم ${number}`;
+            
+            // تمييز الرقم المختار
+            const cards = numbersGrid.querySelectorAll('.number-card');
+            cards.forEach(card => {
+                const num = parseInt(card.querySelector('p').textContent);
+                if (num === number) {
+                    card.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
+                    card.classList.remove('hover:scale-105');
+                } else {
+                    card.classList.add('opacity-50', 'cursor-not-allowed');
+                    card.onclick = null;
+                }
+            });
+        }
+
+        // التحقق من الإجابة
+        function checkAnswer(selectedImageNumber) {
+            if (selectedNumber === null) {
+                gameStatus.textContent = 'الرجاء اختيار رقم أولاً';
+                wrongSound.play();
+                return;
+            }
+
+            if (selectedImageNumber === selectedNumber) {
+                // إجابة صحيحة
+                score++;
+                scoreElement.textContent = `الدرجة: ${score}`;
+                gameStatus.textContent = 'ممتاز! أحسنت الإجابة 🎉';
+                correctSound.play();
+                
+                // إزالة الرقم من القائمة
+                usedNumbers.push(selectedNumber);
+                
+                // إعادة تعيين الاختيار
+                resetSelection();
+                
+                // التحقق من انتهاء اللعبة
+                if (usedNumbers.length >= 10) {
+                    gameStatus.textContent = `أحسنت! انتهت اللعبة بدرجة ${score} من 10 🏆`;
+                    setTimeout(() => {
+                        if (confirm('تهانينا! هل تريد لعبة جديدة؟')) {
+                            resetGame();
+                        }
+                    }, 2000);
+                } else {
+                    // بدء جولة جديدة بعد تأخير
+                    setTimeout(startNewRound, 1500);
+                }
+            } else {
+                // إجابة خاطئة
+                gameStatus.textContent = 'حاول مرة أخرى';
+                wrongSound.play();
+                
+                // اهتزاز الصورة
+                const card = Array.from(imagesGrid.children).find(c => parseInt(c.dataset.number) === selectedImageNumber);
+                card.classList.add('animate-pulse');
+                setTimeout(() => card.classList.remove('animate-pulse'), 500);
+            }
+        }
+
+        // إعادة تعيين الاختيار
+        function resetSelection() {
+            selectedNumber = null;
+            
+            // إعادة تمكين جميع الأرقام
+            const cards = numbersGrid.querySelectorAll('.number-card');
+            cards.forEach(card => {
+                card.classList.remove('ring-4', 'ring-yellow-400', 'scale-105', 'opacity-50', 'cursor-not-allowed');
+                card.classList.add('hover:scale-105');
+            });
+        }
+
+        // بدء جولة جديدة
+        function startNewRound() {
+            // إعادة ترتيب الصور
+            createImages();
+            
+            // اختيار رقم عشوائي جديد من الأرقام غير المستخدمة
+            const availableNumbers = numbersData.filter(n => !usedNumbers.includes(n.number));
+            if (availableNumbers.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                const randomNumber = availableNumbers[randomIndex].number;
+                gameStatus.textContent = `اختر الصورة التي تظهر الرقم ${randomNumber}`;
+                
+                // تمييز الرقم المختار تلقائيًا
+                selectedNumber = randomNumber;
+                const cards = numbersGrid.querySelectorAll('.number-card');
+                cards.forEach(card => {
+                    const num = parseInt(card.querySelector('p').textContent);
+                    if (num === randomNumber) {
+                        card.classList.add('ring-4', 'ring-yellow-400', 'scale-105');
+                        card.classList.remove('hover:scale-105');
+                    } else {
+                        card.classList.add('opacity-50', 'cursor-not-allowed');
+                        card.onclick = null;
+                    }
+                });
+            }
+        }
+
+        // إعادة تعيين اللعبة
+        function resetGame() {
+            score = 0;
+            selectedNumber = null;
+            currentTarget = null;
+            usedNumbers = [];
+            scoreElement.textContent = `الدرجة: ${score}`;
+            gameStatus.textContent = 'اختر الرقم الذي تسمعه';
+            createNumbers();
+            createImages();
+            startNewRound();
+        }
+
+        // تهيئة اللعبة
+        function initGame() {
+            createNumbers();
+            createImages();
+            startNewRound();
+            
+            // تعيين زر إعادة المحاولة
+            resetBtn.addEventListener('click', resetGame);
+        }
+
+        // بدء اللعبة عند تحميل الصفحة
+        window.onload = initGame;
+    </script>
+</body>
+</html>
+```
